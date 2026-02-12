@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Send, TrendingUp, Sparkles, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 interface Layer1LandingProps {
   onNext: (query: string) => void;
@@ -16,57 +16,40 @@ export const Layer1Landing: React.FC<Layer1LandingProps> = ({ onNext, initialVal
 
   return (
     <div className="h-full flex flex-col items-center justify-center bg-white relative overflow-hidden p-6">
-      {/* Background Decor */}
-      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-30 pointer-events-none"></div>
+      {/* Minimal Background */}
+      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(#f3f4f6_1px,transparent_1px)] [background-size:24px_24px] opacity-40 pointer-events-none"></div>
       
-      <div className="z-10 w-full max-w-2xl flex flex-col gap-8 animate-in fade-in zoom-in duration-500">
+      <div className="z-10 w-full max-w-xl flex flex-col gap-10 animate-in fade-in zoom-in duration-700">
         
-        {/* Header */}
-        <div className="text-center space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold tracking-wide border border-blue-100">
-                <Sparkles className="w-3 h-3" /> CompetitivePricingAI V3
-            </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight">
-                Market Intelligence <br/><span className="text-blue-600">Reimagined</span>
+        {/* Minimal Header */}
+        <div className="text-center">
+            <h1 className="text-4xl md:text-6xl font-bold text-gray-900 tracking-tight">
+                Pricing Intelligence
             </h1>
-            <p className="text-lg text-gray-500 max-w-lg mx-auto leading-relaxed">
-                Discover genuine competitive pricing in the Indian market. We analyze demographics, verify links, and structure data for you.
-            </p>
         </div>
 
-        {/* Input Card */}
-        <div className="bg-white p-2 rounded-2xl shadow-xl border border-gray-200 focus-within:ring-4 focus-within:ring-blue-100 transition-all duration-300 transform hover:scale-[1.01]">
-            <form onSubmit={handleSubmit} className="flex items-center gap-2">
-                <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    placeholder="E.g., Gaming Laptop under 1 Lakh, Corporate CRM..."
-                    className="flex-1 px-4 py-4 text-lg bg-transparent border-none outline-none text-gray-800 placeholder-gray-400"
-                    autoFocus
-                />
-                <button 
-                    type="submit"
-                    disabled={!input.trim()}
-                    className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                    <ArrowRight className="w-6 h-6" />
-                </button>
-            </form>
-        </div>
-
-        {/* Features / Capabilities */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
-            {[
-                { title: "Real-time Search", desc: "Across Amazon, Flipkart, & more" },
-                { title: "Genuine Links", desc: "Direct purchase verification" },
-                { title: "Strategic Positioning", desc: "Compare & Analyze value" }
-            ].map((f, i) => (
-                <div key={i} className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
-                    <h3 className="font-semibold text-gray-900 text-sm">{f.title}</h3>
-                    <p className="text-xs text-gray-500 mt-1">{f.desc}</p>
-                </div>
-            ))}
+        {/* Minimal Input */}
+        <div className="group relative">
+            <div className="absolute -inset-1 bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+            <div className="relative bg-white p-1 rounded-2xl shadow-sm border border-gray-100 focus-within:border-gray-300 focus-within:shadow-md transition-all duration-300">
+                <form onSubmit={handleSubmit} className="flex items-center">
+                    <input
+                        type="text"
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Search product or service..."
+                        className="flex-1 px-6 py-4 text-lg bg-transparent border-none outline-none text-gray-900 placeholder-gray-300 font-normal"
+                        autoFocus
+                    />
+                    <button 
+                        type="submit"
+                        disabled={!input.trim()}
+                        className="p-3 mr-1 bg-black text-white rounded-xl hover:bg-gray-800 disabled:opacity-30 disabled:cursor-not-allowed transition-all transform active:scale-95"
+                    >
+                        <ArrowRight className="w-5 h-5" />
+                    </button>
+                </form>
+            </div>
         </div>
 
       </div>
