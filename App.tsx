@@ -1,118 +1,110 @@
 import React, { useState } from 'react';
-import { HeroSearch } from './components/HeroSearch';
-import { PricingTable } from './components/PricingTable';
-import { AnalysisReport } from './components/AnalysisReport';
-import { AnalysisResult, AppState } from './types';
-import { sendMessage, startNewChat } from './services/geminiService';
-import { ArrowLeft, RefreshCw, Layers } from 'lucide-react';
+import { Layer1Landing } from './components/Layer1Landing';
+import { Layer2Questions } from './components/Layer2Questions';
+import { Layer3Processing } from './components/Layer3Processing';
+import { Layer4Results } from './components/Layer4Results';
+import { AppState, Question, AnalysisResult } from './types';
+import { generateQuestions, generateAnalysis } from './services/geminiService';
 
 const App: React.FC = () => {
-  const [appState, setAppState] = useState<AppState>(AppState.LANDING);
+  const [appState, setAppState] = useState<AppState>(AppState.LAYER1_LANDING);
+  
+  // Data State
+  const [query, setQuery] = useState('');
+  const [questions, setQuestions] = useState<Question[]>([]);
+  const [answers, setAnswers] = useState<Record<string, string>>({});
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  const [currentQuery, setCurrentQuery] = useState('');
 
-  const handleSearch = async (query: string) => {
-    setCurrentQuery(query);
-    setAppState(AppState.ANALYZING);
+  // TRANSITION 1: Landing -> Questions (L1 -> L2)
+  const handleLayer1Next = async (initialQuery: string) => {
+    setQuery(initialQuery);
+    // Note: We don't reset answers here if user goes back and forth with same query? 
+    // Usually a new search means new questions.
+    // For simplicity, we regenerate questions.
     try {
-        startNewChat(); // Reset session for new search
-        const result = await sendMessage(query);
-        setAnalysisResult(result);
-        setAppState(AppState.RESULTS);
+        setAppState(AppState.LAYER3_PROCESSING); // Quick load state while fetching Qs
+        const generatedQs = await generateQuestions(initialQuery);
+        setQuestions(generatedQs);
+        setAppState(AppState.LAYER2_QUESTIONS);
     } catch (e) {
-        console.error("Analysis failed", e);
-        setAppState(AppState.LANDING); // Go back on error for now
-        alert("We encountered an issue analyzing the market. Please try again.");
+        console.error("Failed to generate questions", e);
+        setAppState(AppState.LAYER1_LANDING);
     }
   };
 
-  const resetSearch = () => {
-      setAppState(AppState.LANDING);
-      setAnalysisResult(null);
-      setCurrentQuery('');
+  // TRANSITION 2: Questions -> Processing -> Results (L2 -> L3 -> L4)
+  const handleLayer2Complete = async (userAnswers: Record<string, string>) => {
+    setAnswers(userAnswers);
+    setAppState(AppState.LAYER3_PROCESSING);
+    
+    try {
+        // Kick off the heavy analysis
+        const result = await generateAnalysis({ originalQuery: query, answers: userAnswers });
+        setAnalysisResult(result);
+        setAppState(AppState.LAYER4_RESULTS);
+    } catch (e) {
+        console.error("Analysis Failed", e);
+        alert("Agent encountered an error. Please try again.");
+        setAppState(AppState.LAYER1_LANDING);
+    }
+  };
+
+  // Back Navigation Handlers
+  const handleBackFromL2 = () => {
+    setAppState(AppState.LAYER1_LANDING);
+  };
+
+  const handleBackFromL3 = () => {
+    // If we are in L3 (Processing), going back means cancelling or just returning to questions
+    setAppState(AppState.LAYER2_QUESTIONS);
+  };
+
+  const handleBackFromL4 = () => {
+    // L4 -> L3 (View Agents again)
+    // Note: Since L3 auto-transitions when promise resolves, 
+    // manually setting state to L3 here just shows the view without triggering a new analysis.
+    setAppState(AppState.LAYER3_PROCESSING);
+  };
+
+  const handleReset = () => {
+    setQuery('');
+    setQuestions([]);
+    setAnswers({});
+    setAnalysisResult(null);
+    setAppState(AppState.LAYER1_LANDING);
   };
 
   return (
     <div className="h-screen w-full bg-gray-50 overflow-hidden font-inter text-gray-900">
-        
-        {/* Layer 1: Landing / Search */}
-        {appState === AppState.LANDING && (
-            <HeroSearch onSearch={handleSearch} isLoading={false} />
+        {appState === AppState.LAYER1_LANDING && (
+            <Layer1Landing 
+                onNext={handleLayer1Next} 
+                initialValue={query}
+            />
         )}
 
-        {/* Loading State */}
-        {appState === AppState.ANALYZING && (
-            <div className="h-full flex flex-col items-center justify-center bg-white relative">
-                 <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-40"></div>
-                 <div className="z-10 flex flex-col items-center max-w-md text-center">
-                    <div className="relative w-24 h-24 mb-8">
-                        <div className="absolute inset-0 border-4 border-gray-100 rounded-full"></div>
-                        <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
-                        <Layers className="absolute inset-0 m-auto text-blue-600 w-8 h-8 animate-pulse" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Analyzing Market Data</h2>
-                    <p className="text-gray-500">
-                        Investigating competitors for "{currentQuery}"...
-                        <br />
-                        <span className="text-sm mt-2 block opacity-75">Identifying demographic trends, cost structures, and verifying pricing links.</span>
-                    </p>
-                 </div>
-            </div>
+        {appState === AppState.LAYER2_QUESTIONS && (
+            <Layer2Questions 
+                questions={questions} 
+                onComplete={handleLayer2Complete} 
+                onBack={handleBackFromL2}
+                initialAnswers={answers}
+            />
         )}
 
-        {/* Layer 2: Results Dashboard */}
-        {appState === AppState.RESULTS && analysisResult && (
-            <div className="h-full flex flex-col max-w-[1920px] mx-auto">
-                {/* Header */}
-                <header className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center shadow-sm z-20">
-                    <div className="flex items-center gap-4">
-                        <button 
-                            onClick={resetSearch}
-                            className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-500"
-                            title="New Search"
-                        >
-                            <ArrowLeft className="w-5 h-5" />
-                        </button>
-                        <div>
-                            <h1 className="font-bold text-gray-900 text-lg">Analysis Results</h1>
-                            <p className="text-xs text-gray-500">Query: {currentQuery}</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button 
-                           onClick={() => handleSearch(currentQuery)}
-                           className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                        >
-                            <RefreshCw className="w-4 h-4" /> Regenerate Analysis
-                        </button>
-                    </div>
-                </header>
+        {appState === AppState.LAYER3_PROCESSING && (
+            <Layer3Processing 
+                onBack={handleBackFromL3} 
+            />
+        )}
 
-                {/* Main Content Grid */}
-                <main className="flex-1 overflow-hidden p-6 bg-gray-50/50">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
-                        
-                        {/* Left: Report */}
-                        <div className="h-full overflow-hidden flex flex-col animate-in slide-in-from-left duration-500 fade-in">
-                            <AnalysisReport markdown={analysisResult.report} />
-                        </div>
-
-                        {/* Right: Table */}
-                        <div className="h-full overflow-hidden flex flex-col animate-in slide-in-from-right duration-500 fade-in delay-100">
-                            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-1 flex-1 overflow-hidden">
-                                {analysisResult.data.length > 0 ? (
-                                    <PricingTable data={analysisResult.data} />
-                                ) : (
-                                    <div className="h-full flex items-center justify-center text-gray-400">
-                                        <p>No pricing data table generated. Check the report.</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                    </div>
-                </main>
-            </div>
+        {appState === AppState.LAYER4_RESULTS && analysisResult && (
+            <Layer4Results 
+                result={analysisResult} 
+                onBack={handleBackFromL4} 
+                onHome={handleReset}
+                query={query} 
+            />
         )}
     </div>
   );
