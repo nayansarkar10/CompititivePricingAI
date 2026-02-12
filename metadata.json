@@ -1,0 +1,5 @@
+{
+  "name": "CompetitivePricingAI",
+  "description": "An AI-powered agent that researches and compares competitive pricing for products and services using real-time data.",
+  "requestFramePermissions": []
+}
